@@ -1,0 +1,4 @@
+turkce,14,3
+taktak,14,3
+kalkulus,14,3
+piza,14,3
