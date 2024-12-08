@@ -4,6 +4,14 @@
 ![Katkıda Bulunanlar](https://img.shields.io/badge/Katk%C4%B1da%20Bulunanlar-4-blue)
 ![Lisans](https://img.shields.io/badge/Lisans-MIT-orange)
 
+## 🤝 Katkıda Bulunanlar
+
+- [19erdprlk03](https://github.com/19erdprlk03)
+- [AlpaslanCamdibi](https://github.com/AlpaslanCamdibi)
+- [ipekbulgurcu](https://github.com/ipekbulgurcu)
+- [muhammetmertkus](https://github.com/muhammetmertkus)
+
+
 ## 🎯 Hedef
 
 Bu proje, yüz ve duygu tanıma teknolojilerini kullanarak otomatik ve güvenilir bir yoklama sistemi geliştirmeyi amaçlamaktadır. Eğitim kurumları, iş yerleri ve etkinlik organizatörleri için katılım takibini optimize etmeyi hedeflemektedir.
@@ -76,9 +84,3 @@ Ayşe, 35 yaşında bir öğretmen ve sınıfındaki öğrencilerin yoklamasın�
 
 Bu proje, yüz tanıma ve duygu analizi teknolojilerinin, kullanıcı dostu bir GUI ile birleştirilerek yoklama sistemlerini nasıl optimize edebileceğini göstermiştir. Eğitim ve iş dünyasında katılım takibini otomatikleştirerek verimliliği artırmaktadır.
 
-## 🤝 Katkıda Bulunanlar
-
-- [19erdprlk03](https://github.com/19erdprlk03)
-- [AlpaslanCamdibi](https://github.com/AlpaslanCamdibi)
-- [ipekbulgurcu](https://github.com/ipekbulgurcu)
-- [muhammetmertkus](https://github.com/muhammetmertkus)
