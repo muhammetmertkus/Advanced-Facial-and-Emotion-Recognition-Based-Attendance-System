@@ -1,84 +1,84 @@
-📄 Project Description
-Advanced Facial and Emotion Recognition-Based Attendance System (SARON) is a sophisticated attendance management tool designed for educational institutions. Leveraging real-time facial recognition and emotion analysis, SARON automates the attendance tracking process, ensuring accurate and efficient monitoring of student presence and emotional states during classes. This system enhances traditional attendance methods by incorporating advanced technologies to provide insightful analytics and streamlined operations.
+# Gelişmiş Yüz ve Duygu Tanıma Tabanlı Yoklama Sistemi
 
-✨ Features
-Real-Time Facial Recognition: Automatically identifies students using facial recognition technology.
-Emotion Analysis: Utilizes DeepFace to analyze students' emotional states.
-User-Friendly Interface: Developed with PySide6 for an intuitive and aesthetic GUI.
-Student and Course Management: Add, remove, and manage students and courses seamlessly.
-Attendance History and Reporting: View historical attendance data and generate absenteeism reports.
-Photo Capture and Storage: Capture and store student photos efficiently.
-Secure Login System: Safe authentication with "Remember Me" functionality.
-Data Backup and Recovery: Save and load data using CSV and pickle files.
-Multi-Course Support: Manage multiple courses simultaneously.
-Live Attendance Mode: Enable real-time attendance tracking with continuous monitoring.
-Manual Attendance Entry: Option to manually add attendance records.
-Lesson Management: Add and remove lessons, configure lesson details such as weeks and sessions per week.
-Attendance Absenteeism Calculation: Calculate and report students' absenteeism based on predefined limits.
+![Proje Durumu](https://img.shields.io/badge/Proje%20Durumu-Aktif-brightgreen)
+![Katkıda Bulunanlar](https://img.shields.io/badge/Katk%C4%B1da%20Bulunanlar-4-blue)
+![Lisans](https://img.shields.io/badge/Lisans-MIT-orange)
 
-🛠 Installation
-📋 Requirements
-Python 3.7+
-Required Python Libraries:
-PySide6
-opencv-python
-face_recognition
-deepface
-numpy
-pandas
+## 🎯 Hedef
 
-git clone https://github.com/your_username/advanced-facial-emotion-recognition-attendance-system.git
-cd advanced-facial-emotion-recognition-attendance-system
+Bu proje, yüz ve duygu tanıma teknolojilerini kullanarak otomatik ve güvenilir bir yoklama sistemi geliştirmeyi amaçlamaktadır. Eğitim kurumları, iş yerleri ve etkinlik organizatörleri için katılım takibini optimize etmeyi hedeflemektedir.
 
-requirements.txt
-PySide6
-opencv-python
-face_recognition
-deepface
-numpy
-pandas
+## 🧝‍🧍 Hedef Kitle
 
-pip install -r requirements.txt
+- Eğitim kurumları
+- İş yerleri
+- Etkinlik organizatörleri
+- 18-65 yaş arası teknoloji kullanıcıları
 
-python main.py
+## 🚧 Zorluklar
 
-Splash Screen
+1. Gerçek zamanlı ve doğru yüz tanıma sağlama.
+2. Duygu tanıma algoritmalarını etkili bir şekilde entegre etme.
+3. Veri gizliliği ve güvenliğini sağlama.
+4. Farklı ışık ve ortam koşullarında tutarlı performans gösterme.
 
-Upon launching, a splash screen will display the application logo and a progress bar indicating the loading status.
+## 💡 Çözüm
 
-Login Screen
+Proje, yüz tanıma ve duygu analizi işlevlerini bir Qt tabanlı kullanıcı arayüzü ile birleştiren gelişmiş bir sistem geliştirmiştir. Kullanılan başlıca teknolojiler:
 
-Username: Enter your username (default: admin).
-Password: Enter your password (default: admin123).
-Remember Me: Check this box to save your credentials for future logins.
-Forgot Password: Click to receive instructions on password recovery.
-Main Attendance System
+- **Yüz Tanıma:** `face_recognition` kütüphanesi ile yüksek doğruluk oranına sahip yüz tanıma.
+- **Duygu Analizi:** `DeepFace` kütüphanesi ile yaş, cinsiyet, ırk ve duyguların analizi.
+- **Görüntü İşleme:** `OpenCV` kullanılarak gerçek zamanlı kamera akışı.
+- **Veri Yönetimi:** `Pandas` ile yoklama verilerinin CSV formatında saklanması.
+- **GUI:** `PySide6` ile kullanıcı dostu bir arayüz.
 
-Tabs: Navigate through different functionalities using the tabs:
+## 🔧 Kullanılan Kütüphaneler ve İşlevleri
 
-Yoklama (Attendance): Capture attendance using the webcam.
-Öğrenci Yönetimi (Student Management): Manage student records.
-Yoklama Geçmişi (Attendance History): View historical attendance data.
-Devamsızlık Raporu (Absenteeism Report): Generate absenteeism reports.
-Ders Yönetimi (Lesson Management): Manage lesson details.
-Fotoğraf Geçmişi (Photo History): View captured attendance photos.
-Live Attendance: Enable live attendance tracking for real-time monitoring.
+### 1. **Python Kütüphaneleri**
+- **`os`, `sys`, `threading`:** Dosya ve sistem işlemleri, paralel programlama.
+- **`pickle`:** Yüz verilerinin saklanması ve yüklenmesi.
+- **`pandas`:** Yoklama verilerinin işlenmesi ve raporlanması.
 
-Manual Entry: Add attendance records manually if needed.
+### 2. **Görüntü İşleme**
+- **`OpenCV (cv2)`:** Gerçek zamanlı görüntü akışı ve işleme.
+- **`numpy`:** Görüntü matrislerini işleme.
 
-Photo Capture: Capture and store student photos during attendance.
+### 3. **Yüz Tanıma ve Duygu Analizi**
+- **`face_recognition`:** Yüz algılama ve tanıma.
+- **`DeepFace`:** Duygu, yaş, cinsiyet ve ırk analizi.
 
-📂 Managing Students and Lessons
-Add Student: Enter student details and capture or select a photo.
-Remove Student: Select a student from the list and remove their record.
-Add Lesson: Define new lessons with details like weeks and sessions per week.
-Remove Lesson: Select and remove existing lessons.
-📊 Viewing Reports
-Attendance History: Select a lesson and view detailed attendance records.
-Absenteeism Report: Define absence limits and generate reports on students exceeding those limits.
-🤝 Contributing
-Contributions are welcome! To contribute to SARON, please follow these steps:
+### 4. **GUI (Grafiksel Kullanıcı Arayüzü)**
+- **`PySide6.QtWidgets`:** Qt arayüz bileşenleri (butonlar, etiketler, giriş kutuları).
+- **`PySide6.QtCore`:** İş parçacığı ve sinyal mekanizması.
+- **`PySide6.QtGui`:** Görselleri ve çerçeveleri işleme.
 
+## 👤 Kullanıcı Hikayesi: Ayşe'nin Deneyimi
 
+Ayşe, 35 yaşında bir öğretmen ve sınıfındaki öğrencilerin yoklamasını daha verimli bir şekilde almak istiyor.
 
+1. **Keşif:** GitHub üzerinden projeyi indirir.
+2. **Kurulum:** Bağımlılıkları yükler ve uygulamayı çalıştırır.
+3. **Kullanım:**
+   - Öğrencilerin yüz verilerini sisteme kaydeder.
+   - Ders sırasında kamerayı başlatarak yoklamayı gerçek zamanlı alır.
+4. **Sonuç:** Otomatik oluşturulan yoklama raporları ile zaman tasarrufu sağlar ve detaylı analizlere ulaşır.
 
+## 📈 Öğrenilen Dersler ve Gelecek Planları
+
+1. Geri bildirimler, kullanıcı dostu arayüzün önemini vurguladı.
+2. Duygu tanıma özelliği, öğrencilerin derse katılım seviyelerini değerlendirmede etkili oldu.
+3. **Gelecek Planlar:**
+   - Bulut tabanlı veri depolama.
+   - Mobil uygulama entegrasyonu.
+   - Daha gelişmiş raporlama araçları.
+
+## 🎓 Sonuç
+
+Bu proje, yüz tanıma ve duygu analizi teknolojilerinin, kullanıcı dostu bir GUI ile birleştirilerek yoklama sistemlerini nasıl optimize edebileceğini göstermiştir. Eğitim ve iş dünyasında katılım takibini otomatikleştirerek verimliliği artırmaktadır.
+
+## 🤝 Katkıda Bulunanlar
+
+- [19erdprlk03](https://github.com/19erdprlk03)
+- [AlpaslanCamdibi](https://github.com/AlpaslanCamdibi)
+- [ipekbulgurcu](https://github.com/ipekbulgurcu)
+- [muhammetmertkus](https://github.com/muhammetmertkus)
