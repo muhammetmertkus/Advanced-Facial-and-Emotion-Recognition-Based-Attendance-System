@@ -182,22 +182,24 @@ class AttendanceSystem(QWidget):
         self.ui = Ui_AttendanceSystem()
         self.ui.setup_ui(self)
 
-        self.known_face_encodings = []
-        self.known_face_names = []
-        self.attendance_data = {}
+        # Yeni Veri Yapısı: Her dersin kendi öğrencileri var
+        self.students = {}  # { 'Ders Adı': [ { 'id': ..., 'name': ..., 'encoding': ... }, ... ], ... }
+        self.attendance_data = {}  # { 'Ders Adı': DataFrame, ... }
         self.lesson_list = []
         self.lesson_details = {}
         self.current_photo = None
         self.unidentified_faces = []
         self.latest_frame = None  # En son çerçeveyi saklamak için
 
-        # Load data
+        # Veri yükleme
         self.load_lessons()
-        self.load_known_faces()
-        self.load_attendance_data()
         self.load_students()
+        self.load_attendance_data()
 
-        # Connect signals and slots
+        # Yüz kodlamalarını ve isimlerini güncelle
+        self.load_known_faces()
+
+        # Sinyaller ve slotlar
         self.ui.capture_btn.clicked.connect(self.take_attendance)
         self.ui.add_student_btn.clicked.connect(self.add_student)
         self.ui.add_manual_btn.clicked.connect(self.add_manual_student)
@@ -208,20 +210,76 @@ class AttendanceSystem(QWidget):
         self.ui.add_lesson_btn.clicked.connect(self.add_lesson)
         self.ui.remove_lesson_btn.clicked.connect(self.remove_lesson)
         self.ui.lesson_selector.currentTextChanged.connect(self.update_lesson_details)
+        self.ui.lesson_list_selector.currentTextChanged.connect(self.update_student_list)
         self.ui.show_photo_btn.clicked.connect(self.display_photo)
         self.ui.photo_capture_btn.clicked.connect(self.open_photo_capture_dialog)
-        
+
         # Bağlantı: Canlı Kamera Yoklama butonu
         self.ui.live_attendance_btn.clicked.connect(self.toggle_live_attendance)
 
-        # Connect update signal
+        # Sinyali bağlama
         self.update_info_signal.connect(self.update_info_text)
 
         # VideoThread değişkeni
         self.video_thread = None
 
-        # Start video feed on startup
+        # Video akışını başlat
         self.start_video_feed()
+
+    def load_lessons(self):
+        if os.path.exists('lessons.txt'):
+            lessons = []  # photo_lesson_selector için dersleri toplamak amacıyla liste
+            with open('lessons.txt', 'r') as file:
+                for line in file.readlines():
+                    parts = line.strip().split(',')
+                    if len(parts) == 3:
+                        lesson, weeks, lessons_per_week = parts
+                        self.lesson_list.append(lesson)
+                        self.lesson_details[lesson] = {'weeks': int(weeks), 'lessons_per_week': int(lessons_per_week)}
+                        
+                        # Dersleri uygun UI bileşenlerine ekleyin
+                        self.ui.lesson_selector.addItem(lesson)
+                        self.ui.history_lesson_selector.addItem(lesson)
+                        self.ui.absenteeism_lesson_selector.addItem(lesson)
+                        self.ui.lesson_list_selector.addItem(lesson)
+                        self.ui.lesson_selector_for_student.addItem(lesson)
+                        
+                        # photo_lesson_selector için dersleri listeye ekleyin
+                        lessons.append(lesson)
+            
+            # Tüm dersleri topluca photo_lesson_selector'a ekleyin
+            self.ui.photo_lesson_selector.clear()
+            self.ui.photo_lesson_selector.addItems(lessons)
+        else:
+            print("lessons.txt dosyası bulunamadı.")
+
+    def save_lessons(self):
+        with open('lessons.txt', 'w') as file:
+            for lesson, details in self.lesson_details.items():
+                file.write(f"{lesson},{details['weeks']},{details['lessons_per_week']}\n")
+
+    def load_students(self):
+        if os.path.exists('students.pkl'):
+            with open('students.pkl', 'rb') as file:
+                self.students = pickle.load(file)
+        else:
+            # Dersler yüklendiyse her ders için boş öğrenci listesi oluştur
+            self.students = {lesson: [] for lesson in self.lesson_list}
+            print("students.pkl dosyası bulunamadı. Yeni bir dosya oluşturuldu.")
+
+    def save_students(self):
+        with open('students.pkl', 'wb') as file:
+            pickle.dump(self.students, file)
+
+    def load_known_faces(self):
+        self.known_face_encodings = []
+        self.known_face_names = []
+        for lesson, students in self.students.items():
+            for student in students:
+                encoding = student['encoding']
+                name = f"{student['id']}_{student['name']}"
+                self.known_face_encodings.append(encoding)
+                self.known_face_names.append(name)
 
     def start_video_feed(self):
         # Start VideoThread for video display
@@ -339,13 +397,18 @@ class AttendanceSystem(QWidget):
             emotions_detected = []
             age_gender_race_info = []
 
+            # Seçili derse ait öğrencileri al
+            lesson_students = self.students.get(lesson, [])
+            lesson_face_encodings = [student['encoding'] for student in lesson_students]
+            lesson_face_names = [f"{student['id']}_{student['name']}" for student in lesson_students]
+
             for face_encoding, face_location in zip(face_encodings, face_locations):
-                matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding)
+                matches = face_recognition.compare_faces(lesson_face_encodings, face_encoding)
                 name = "Unknown"
 
                 if True in matches:
                     first_match_index = matches.index(True)
-                    name = self.known_face_names[first_match_index]
+                    name = lesson_face_names[first_match_index]
                     present_students.append(name)
                 else:
                     self.unidentified_faces.append(face_encoding)
@@ -377,7 +440,7 @@ class AttendanceSystem(QWidget):
             date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             new_data = []
 
-            for student in self.known_face_names:
+            for student in lesson_face_names:
                 status = '+' if student in present_students else '-'
                 new_data.append({
                     'Tarih': date,
@@ -470,14 +533,21 @@ class AttendanceSystem(QWidget):
             print(f"{student_name} ({student_id}) için fotoğraflar kaydedildi.")
 
     def add_student(self):
-        name = self.ui.student_name.text()
-        student_id = self.ui.student_id.text()
+        name = self.ui.student_name.text().strip()
+        student_id = self.ui.student_id.text().strip()
         selected_lesson = self.ui.lesson_selector_for_student.currentText()
         photo_path = self.ui.photo_path.text()
 
         if not (name and student_id and selected_lesson and (self.current_photo is not None or photo_path)):
             QMessageBox.warning(self, "Uyarı", "Lütfen tüm alanları doldurun.")
             return
+
+        # Öğrencinin başka bir derse kayıtlı olup olmadığını kontrol et
+        for lesson, students in self.students.items():
+            for student in students:
+                if student['id'] == student_id:
+                    QMessageBox.warning(self, "Uyarı", f"Öğrenci ID {student_id} zaten '{lesson}' dersine kayıtlı.")
+                    return
 
         lesson_student_photos_path = os.path.join(selected_lesson, 'student_photos')
         new_photo_path = os.path.join(lesson_student_photos_path, f"{student_id}_{name.replace(' ', '_')}.jpg")
@@ -502,6 +572,16 @@ class AttendanceSystem(QWidget):
                 return
 
             face_encoding = face_encodings[0]
+
+            # Öğrenciyi seçili derse ekle
+            new_student = {
+                'id': student_id,
+                'name': name,
+                'encoding': face_encoding,
+            }
+            self.students[selected_lesson].append(new_student)
+
+            # Yüz kodlamalarını ve isimleri güncelle
             self.known_face_encodings.append(face_encoding)
             self.known_face_names.append(f"{student_id}_{name}")
 
@@ -512,12 +592,19 @@ class AttendanceSystem(QWidget):
             self.current_photo = None
 
             self.update_student_list()
+            self.save_students()  # Güncellenen öğrencileri kaydet
         except Exception as e:
             QMessageBox.critical(self, "Hata", f"Öğrenci eklenirken bir hata oluştu: {str(e)}")
 
     def update_student_list(self):
-        students = [name.replace('_', ' ') for name in self.known_face_names]
-        self.ui.student_list.setText("\n".join(students))
+        selected_lesson = self.ui.lesson_list_selector.currentText()
+        if not selected_lesson:
+            self.ui.student_list.setText("Lütfen bir ders seçin.")
+            return
+
+        students = self.students.get(selected_lesson, [])
+        student_text = "\n".join([f"{student['id']} - {student['name']}" for student in students])
+        self.ui.student_list.setText(student_text)
 
     def display_attendance_history(self):
         selected_lesson = self.ui.history_lesson_selector.currentText()
@@ -576,10 +663,15 @@ class AttendanceSystem(QWidget):
         lesson_number = self.ui.lesson_number_selector.value()
         date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        matching_students = [name for name in self.known_face_names if name.startswith(student_id)]
+        # Öğrenci ID'sine göre öğrenciyi bulma
+        matching_students = []
+        for lesson_students in self.students.values():
+            for student in lesson_students:
+                if student['id'] == student_id:
+                    matching_students.append(student)
         if matching_students:
-            student_name = matching_students[0].split('_', 1)[1]
-            student_full_name = f"{student_id}_{student_name}"
+            student = matching_students[0]
+            student_full_name = f"{student['id']}_{student['name']}"
         else:
             QMessageBox.warning(self, "Uyarı", "Girilen numaraya ait öğrenci bulunamadı.")
             return
@@ -642,20 +734,54 @@ class AttendanceSystem(QWidget):
         os.makedirs(f'{new_lesson}/attendance_photos', exist_ok=True)
         os.makedirs(f'{new_lesson}/student_photos', exist_ok=True)
 
+        # Yeni derse ait boş öğrenci listesi oluştur
+        self.students[new_lesson] = []
+
         self.save_lessons()
+        self.save_students()
         QMessageBox.information(self, "Bilgi", "Ders başarıyla eklendi.")
 
     def remove_lesson(self):
         selected_lesson = self.ui.lesson_list_selector.currentText()
         if selected_lesson:
+            # Ders listesinden çıkar
             self.lesson_list.remove(selected_lesson)
             self.ui.lesson_selector.removeItem(self.ui.lesson_selector.findText(selected_lesson))
             self.ui.history_lesson_selector.removeItem(self.ui.history_lesson_selector.findText(selected_lesson))
             self.ui.absenteeism_lesson_selector.removeItem(self.ui.absenteeism_lesson_selector.findText(selected_lesson))
             self.ui.lesson_list_selector.removeItem(self.ui.lesson_list_selector.findText(selected_lesson))
             self.ui.lesson_selector_for_student.removeItem(self.ui.lesson_selector_for_student.findText(selected_lesson))
+            
+            # Ders detaylarını sil
             del self.lesson_details[selected_lesson]
+            
+            # Dersle ilişkili öğrencileri sil
+            if selected_lesson in self.students:
+                del self.students[selected_lesson]
+            
+            # İlgili yoklama verilerini sil
+            csv_file = f'{selected_lesson}_yoklama.csv'
+            if os.path.exists(csv_file):
+                os.remove(csv_file)
+            
+            # İlgili fotoğraf klasörlerini sil
+            attendance_photos_path = os.path.join(selected_lesson, 'attendance_photos')
+            student_photos_path = os.path.join(selected_lesson, 'student_photos')
+            if os.path.exists(attendance_photos_path):
+                for filename in os.listdir(attendance_photos_path):
+                    file_path = os.path.join(attendance_photos_path, filename)
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+                os.rmdir(attendance_photos_path)
+            if os.path.exists(student_photos_path):
+                for filename in os.listdir(student_photos_path):
+                    file_path = os.path.join(student_photos_path, filename)
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+                os.rmdir(student_photos_path)
+            
             self.save_lessons()
+            self.save_students()
             QMessageBox.information(self, "Bilgi", "Ders başarıyla kaldırıldı.")
         else:
             QMessageBox.warning(self, "Uyarı", "Kaldırmak için bir ders seçin.")
@@ -675,24 +801,6 @@ class AttendanceSystem(QWidget):
             self.ui.week_selector.setMaximum(weeks)
             self.ui.lesson_number_selector.setMaximum(lessons_per_week_int)
 
-    def load_known_faces(self):
-        self.known_face_encodings = []
-        self.known_face_names = []
-        for lesson in self.lesson_list:
-            student_photos_path = os.path.join(lesson, 'student_photos')
-            if os.path.exists(student_photos_path):
-                for filename in os.listdir(student_photos_path):
-                    if filename.endswith('.jpg') or filename.endswith('.png'):
-                        try:
-                            image = face_recognition.load_image_file(os.path.join(student_photos_path, filename))
-                            encodings = face_recognition.face_encodings(image)
-                            if encodings:
-                                encoding = encodings[0]
-                                self.known_face_encodings.append(encoding)
-                                self.known_face_names.append(filename.split('.')[0])
-                        except Exception as e:
-                            print(f"{filename} yüz verisi yüklenirken hata oluştu: {str(e)}")
-
     def load_attendance_data(self):
         for lesson in self.lesson_list:
             csv_file = f'{lesson}_yoklama.csv'
@@ -700,56 +808,6 @@ class AttendanceSystem(QWidget):
                 self.attendance_data[lesson] = pd.read_csv(csv_file)
             else:
                 self.attendance_data[lesson] = pd.DataFrame(columns=['Tarih', 'Ders', 'Hafta', 'Ders Numarası', 'Öğrenci', 'Durum'])
-
-    def load_lessons(self):
-        if os.path.exists('lessons.txt'):
-            lessons = []  # photo_lesson_selector için dersleri toplamak amacıyla liste
-            with open('lessons.txt', 'r') as file:
-                for line in file.readlines():
-                    parts = line.strip().split(',')
-                    if len(parts) == 3:
-                        lesson, weeks, lessons_per_week = parts
-                        self.lesson_list.append(lesson)
-                        self.lesson_details[lesson] = {'weeks': int(weeks), 'lessons_per_week': int(lessons_per_week)}
-                        
-                        # Dersleri uygun UI bileşenlerine ekleyin
-                        self.ui.lesson_selector.addItem(lesson)
-                        self.ui.history_lesson_selector.addItem(lesson)
-                        self.ui.absenteeism_lesson_selector.addItem(lesson)
-                        self.ui.lesson_list_selector.addItem(lesson)
-                        self.ui.lesson_selector_for_student.addItem(lesson)
-                        
-                        # photo_lesson_selector için dersleri listeye ekleyin
-                        lessons.append(lesson)
-            
-            # Tüm dersleri topluca photo_lesson_selector'a ekleyin
-            self.ui.photo_lesson_selector.clear()
-            self.ui.photo_lesson_selector.addItems(lessons)
-        else:
-            print("lessons.txt dosyası bulunamadı.")
-
-    def save_lessons(self):
-        with open('lessons.txt', 'w') as file:
-            for lesson, details in self.lesson_details.items():
-                file.write(f"{lesson},{details['weeks']},{details['lessons_per_week']}\n")
-
-    def save_students(self):
-        with open('students.pkl', 'wb') as file:
-            pickle.dump({
-                'known_face_encodings': self.known_face_encodings,
-                'known_face_names': self.known_face_names
-            }, file)
-
-    def load_students(self):
-        if os.path.exists('students.pkl'):
-            with open('students.pkl', 'rb') as file:
-                data = pickle.load(file)
-                self.known_face_encodings = data.get('known_face_encodings', [])
-                self.known_face_names = data.get('known_face_names', [])
-                # Öğrencileri güncelle
-                self.update_student_list()
-        else:
-            print("students.pkl dosyası bulunamadı.")
 
     def display_photo(self):
         # Kullanıcının seçtiği ders, hafta ve ders numarasını al
@@ -762,6 +820,9 @@ class AttendanceSystem(QWidget):
 
         # Dosya adını arama kriterine uygun olarak ayarla
         search_pattern = f"Hafta{week}_Ders{lesson_number}.jpg"
+        if not os.path.exists(photo_dir):
+            QMessageBox.warning(self, "Uyarı", f"{lesson} dersine ait fotoğraf klasörü bulunamadı.")
+            return
         matching_photos = [f for f in os.listdir(photo_dir) if search_pattern in f]
 
         if matching_photos:
@@ -779,7 +840,7 @@ class AttendanceSystem(QWidget):
             self.video_thread.stop()  # VideoThread'ı durdur
         # Kamera serbest bırakma işlemi VideoThread tarafından yapılıyor
         super().closeEvent(event)
-
+        
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
