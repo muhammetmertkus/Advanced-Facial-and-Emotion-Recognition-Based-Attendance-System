@@ -24,16 +24,16 @@ from PhotoCaptureDialog import PhotoCaptureDialog
 class VideoThread(QThread):
     change_pixmap_signal = Signal(QImage)
     attendance_signal = Signal(str)
-    frame_available = Signal(np.ndarray)  # En son çerçeveyi yayınlamak için yeni sinyal
+    frame_available = Signal(object)  # En son çerçeveyi yayınlamak için yeni sinyal
 
     def __init__(self, known_face_encodings, known_face_names):
         super().__init__()
         self._run_flag = True
         self.known_face_encodings = known_face_encodings
         self.known_face_names = known_face_names
-        self.frame_count = 0  # Yüz tanıma sıklığını kontrol etmek için
         self.process_attendance = False  # Yoklama işlemi aktif mi
         self.latest_frame = None  # En son çerçeveyi saklamak için
+        self.marked_students = set()  # Mevcut oturumda yoklamaya alınan öğrenciler
 
     def run(self):
         # Kamerayı başlatma (DirectShow kullanarak daha stabil olabilir)
@@ -50,29 +50,35 @@ class VideoThread(QThread):
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
                 if self.process_attendance:
-                    self.frame_count += 1
-                    if self.frame_count % 5 == 0:  # Her 5 çerçevede bir yüz tanıma
-                        face_locations = face_recognition.face_locations(rgb_frame)
-                        face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+                    face_locations = face_recognition.face_locations(rgb_frame)
+                    face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
 
-                        for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
-                            matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding)
-                            name = "Unknown"
+                    for face_encoding, face_location in zip(face_encodings, face_locations):
+                        matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding)
+                        name = "Unknown"
 
-                            if True in matches:
-                                first_match_index = matches.index(True)
-                                name = self.known_face_names[first_match_index]
-                                # Yoklamayı işaretleme
+                        if True in matches:
+                            first_match_index = matches.index(True)
+                            name = self.known_face_names[first_match_index]
+
+                            # Eğer öğrenci daha önce yoklama alınmadıysa, yoklama sinyali gönder
+                            if name not in self.marked_students:
                                 self.attendance_signal.emit(name)
+                                self.marked_students.add(name)
 
-                            # Yüzün etrafına kare çizme
+                            # Yeşil kare ve öğrenci bilgisi ekleme
+                            top, right, bottom, left = face_location
                             cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-
-                            # Öğrenci numarası ve ismini yazma
-                            student_info = name.replace('_', ' ')
                             cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 255, 0), cv2.FILLED)
                             font = cv2.FONT_HERSHEY_DUPLEX
-                            cv2.putText(frame, student_info, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
+                            cv2.putText(frame, name.replace('_', ' '), (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
+                        else:
+                            # Tanımlanamayan yüzler için kırmızı kare
+                            top, right, bottom, left = face_location
+                            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+                            cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
+                            font = cv2.FONT_HERSHEY_DUPLEX
+                            cv2.putText(frame, "Unknown", (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
 
                 # Çerçeveyi RGB'den BGR'ye dönüştürerek QImage'e çevirme
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -494,7 +500,8 @@ class AttendanceSystem(QWidget):
 
     @Slot(str)
     def update_info_text(self, info):
-        self.ui.info_text.setText(info)
+        self.ui.info_text.append(info)
+
 
     def select_photo(self):
         file_name, _ = QFileDialog.getOpenFileName(self, "Öğrenci Fotoğrafı Seç", "", "Image Files (*.png *.jpg *.bmp)")
