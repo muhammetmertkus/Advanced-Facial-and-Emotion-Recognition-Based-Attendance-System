@@ -4,7 +4,7 @@
 ![Katkıda Bulunanlar](https://img.shields.io/badge/Katk%C4%B1da%20Bulunanlar-4-blue)
 ![Lisans](https://img.shields.io/badge/Lisans-MIT-orange)
 
-## 🤝 Katkıda Bulunanlar
+## 🤝 Proje Paydaşları
 
 - [19erdprlk03](https://github.com/19erdprlk03)
 - [AlpaslanCamdibi](https://github.com/AlpaslanCamdibi)
